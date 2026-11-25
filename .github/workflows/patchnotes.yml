@@ -9,6 +9,11 @@ on:
         description: 'Post the newest patch notes again'
         type: boolean
         default: false
+      only_webhook:
+        description: 'Post to: all, or one webhook number (1 = Chill Zone, 2 = Goliad Se Grot)'
+        type: choice
+        options: ['all', '1', '2', '3', '4', '5']
+        default: 'all'
 
 permissions:
   contents: write
@@ -32,6 +37,11 @@ jobs:
         run: node run.js
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_URL_2: ${{ secrets.DISCORD_WEBHOOK_URL_2 }}
+          DISCORD_WEBHOOK_URL_3: ${{ secrets.DISCORD_WEBHOOK_URL_3 }}
+          DISCORD_WEBHOOK_URL_4: ${{ secrets.DISCORD_WEBHOOK_URL_4 }}
+          DISCORD_WEBHOOK_URL_5: ${{ secrets.DISCORD_WEBHOOK_URL_5 }}
+          ONLY_WEBHOOK: ${{ inputs.only_webhook || 'all' }}
           ROLE_ID: ${{ vars.ROLE_ID }}
           REPOST_LATEST: ${{ inputs.repost_latest }}
 
