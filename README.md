@@ -10,7 +10,9 @@ All in the repository's **Settings → Secrets and variables → Actions**:
 
 | Name | Where | What |
 |---|---|---|
-| `DISCORD_WEBHOOK_URL` | **Secrets** tab | The webhook link for your patch notes channel (required) |
+| `DISCORD_WEBHOOK_URL` | **Secrets** tab | Webhook link for channel 1: Chill Zone #rob-run-patch-notes (required) |
+| `DISCORD_WEBHOOK_URL_2` | **Secrets** tab | Webhook link for channel 2: Goliad Se Grot #🔥robrun-updates |
+| `DISCORD_WEBHOOK_URL_3` to `_5` | **Secrets** tab | Optional extra channels |
 | `ROLE_ID` | **Variables** tab | A role ID to ping (optional; leave it out for no ping) |
 
 Other options (game, filter, embed text, webhook name and avatar) are in `config.js`.
@@ -18,7 +20,7 @@ Other options (game, filter, embed text, webhook name and avatar) are in `config
 ## Run it now / post again
 
 Go to the **Actions** tab → **SuperX_RobRunPatchNotes** → **Run workflow**.
-Tick **Post the newest patch notes again** if you want it to repost the latest one.
+Tick **Post the newest patch notes again** to repost the latest one. Use **Post to** to send it to all channels or just one (1 = Chill Zone, 2 = Goliad Se Grot).
 
 ## Add a role ping later
 

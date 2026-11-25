@@ -10,7 +10,15 @@ const config = require('./config');
 const { toDiscordMarkdown, extractImages, splitText, formatDate } = require('./format');
 
 const STATE_FILE = path.join(__dirname, 'state.json');
-const WEBHOOK = (process.env.DISCORD_WEBHOOK_URL || '').trim();
+// Every channel to post in: DISCORD_WEBHOOK_URL, DISCORD_WEBHOOK_URL_2, DISCORD_WEBHOOK_URL_3 ...
+const WEBHOOK_RE = /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//;
+const WEBHOOKS = [process.env.DISCORD_WEBHOOK_URL, process.env.DISCORD_WEBHOOK_URL_2, process.env.DISCORD_WEBHOOK_URL_3, process.env.DISCORD_WEBHOOK_URL_4, process.env.DISCORD_WEBHOOK_URL_5]
+  .map((w, i) => ({ num: i + 1, url: (w || '').trim() }))
+  .filter((w) => WEBHOOK_RE.test(w.url));
+// Run workflow option: 'all' or a number to post only to that webhook (e.g. '2')
+const ONLY = String(process.env.ONLY_WEBHOOK || 'all').trim();
+const TARGETS = ONLY === 'all' ? WEBHOOKS : WEBHOOKS.filter((w) => String(w.num) === ONLY);
+let failures = 0;
 const ROLE_ID = (process.env.ROLE_ID || '').trim();
 const REPOST_LATEST = String(process.env.REPOST_LATEST) === 'true';
 const KEEPALIVE_DAYS = 7;
@@ -104,8 +112,8 @@ function buildPayloads(item) {
   });
 }
 
-async function sendWebhook(payload, attempt = 1) {
-  const res = await fetch(`${WEBHOOK}?wait=true&with_components=true`, {
+async function sendWebhook(url, payload, attempt = 1) {
+  const res = await fetch(`${url}?wait=true&with_components=true`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -114,30 +122,39 @@ async function sendWebhook(payload, attempt = 1) {
   if (res.status === 429 && attempt <= 5) {
     const body = await res.json().catch(() => ({}));
     await sleep(Math.ceil((body.retry_after || 2) * 1000) + 250);
-    return sendWebhook(payload, attempt + 1);
+    return sendWebhook(url, payload, attempt + 1);
   }
   if (res.status === 400 && payload.components) {
     // Some webhooks can't send buttons - send without it (the title still links to Steam)
     const { components, ...rest } = payload;
-    return sendWebhook(rest, attempt);
+    return sendWebhook(url, rest, attempt);
   }
   if (!res.ok) throw new Error(`Discord webhook returned HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
 }
 
 async function post(item) {
-  for (const p of buildPayloads(item)) {
-    await sendWebhook(p);
-    await sleep(1200);
+  const payloads = buildPayloads(item);
+  for (const w of TARGETS) {
+    try {
+      for (const p of payloads) {
+        await sendWebhook(w.url, p);
+        await sleep(1200);
+      }
+      log(`Posted "${item.title}" to webhook ${w.num}.`);
+    } catch (err) {
+      failures++;
+      console.error(`[SuperX_RobRunPatchNotes] Webhook ${w.num} failed:`, err.message);
+    }
   }
-  log(`Posted: "${item.title}"`);
 }
 
 // ---------- Main ----------
 async function main() {
-  if (!/^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//.test(WEBHOOK)) {
-    console.error('[SuperX_RobRunPatchNotes] DISCORD_WEBHOOK_URL secret is missing or wrong. Add it in GitHub: Settings → Secrets and variables → Actions.');
+  if (!TARGETS.length) {
+    console.error('[SuperX_RobRunPatchNotes] No valid webhook found. Add DISCORD_WEBHOOK_URL (and _2, _3...) in GitHub: Settings → Secrets and variables → Actions.');
     process.exit(1);
   }
+  log(`Posting to ${TARGETS.length} webhook(s): ${TARGETS.map((w) => w.num).join(', ')}`);
 
   const state = loadState();
   const news = (await fetchNews()).filter(isPatchNote);
@@ -168,6 +185,7 @@ async function main() {
   if (Date.now() - last > KEEPALIVE_DAYS * 86400000) state.lastKeepalive = new Date().toISOString();
 
   saveState(state);
+  if (failures) process.exit(1); // shows as failed on GitHub so you notice a broken webhook
 }
 
 main().catch((err) => {
