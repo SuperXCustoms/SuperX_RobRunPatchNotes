@@ -29,7 +29,7 @@ function saveState(s) {
 }
 
 // ---------- Steam ----------
-const headerImage = () => `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${config.steamAppId}/header.jpg`;
+const headerImage = () => `https://cdn.akamai.steamstatic.com/steam/apps/${config.steamAppId}/header.jpg`;
 
 async function fetchNews() {
   const params = new URLSearchParams({
@@ -71,7 +71,7 @@ function buildPayloads(item) {
   const embeds = chunks.map((chunk, i) => {
     const e = { color: config.embed.color, description: chunk };
     if (i === 0) {
-      e.author = { name: config.embed.authorName, icon_url: headerImage(), url: item.url };
+      e.author = { name: config.embed.authorName, url: item.url };
       e.title = truncate(item.title, 256);
       e.url = item.url;
     }
