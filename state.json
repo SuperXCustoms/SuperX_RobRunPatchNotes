@@ -1,1 +1,8 @@
-{ "initialized": false, "postedGids": [], "lastKeepalive": null }
+{
+  "initialized": true,
+  "postedGids": [
+    "1849827110432538",
+    "1849458702693254"
+  ],
+  "lastKeepalive": "2026-11-25T08:39:52.664Z"
+}
